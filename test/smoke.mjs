@@ -134,6 +134,18 @@ await check('摘要可关闭 / 超长可截断', () => {
   assert.ok(Array.from(clipped.markdown).length < 400);
   assert.match(clipped.markdown, /…/u);
 });
+await check('摘要字数填 0 时不附带摘要（不留孤立的省略号）', () => {
+  const context = { firstUserText: 'hi', replyText: '这是最后回复的内容。', turnStartedAt: undefined, finishedAt: undefined };
+  const message = buildPushMessage({
+    session: fakeSession('s1', []),
+    context,
+    status: statusOf({ kind: 'completed' }),
+    config: { includeExcerpt: true, excerptChars: 0 },
+  });
+  assert.doesNotMatch(message.markdown, /…/u);
+  assert.doesNotMatch(message.text, /这是最后回复/u);
+  assert.equal(message.meta.session.status, 'completed');
+});
 await check('formatDuration 覆盖秒 / 分 / 小时', () => {
   assert.equal(formatDuration(200), '不到 1 秒');
   assert.equal(formatDuration(8300), '8 秒');
