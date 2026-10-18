@@ -1,4 +1,4 @@
-# dsh-push-notify（消息推送）
+# dsh-serverChan（消息推送）
 
 DSH 插件：**每轮任务完成后**把结果推到手机/群里。
 
@@ -14,7 +14,7 @@ DSH 插件：**每轮任务完成后**把结果推到手机/群里。
 dsh plugin add github:sugar-zero/dsh-serverChan --profile desktop
 
 # 或从本地目录安装
-dsh plugin add /path/to/push-notify --profile desktop
+dsh plugin add /path/to/dsh-serverChan --profile desktop
 ```
 
 安装后 Host 半热生效；Web 半若没自动出现，刷新一次页面 / 重启 DSH。

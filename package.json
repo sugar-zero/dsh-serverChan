@@ -1,5 +1,5 @@
 {
-  "name": "dsh-push-notify",
+  "name": "dsh-serverChan",
   "version": "0.1.0",
   "type": "module",
   "description": "DSH 消息推送：每轮任务完成后推送到 Server酱/飞书/企业微信/钉钉/Telegram/Bark/自定义 Webhook；对话内按会话开关，设置页管理通道与新会话默认。",

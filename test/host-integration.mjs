@@ -4,7 +4,7 @@
  * 不需要 DSH 进程：伪造 ctx（commands / webServer / sessions / on / effect），
  * 用本地 HTTP 回显服务当通道，验证：
  *   · /api/push-notify 路由（配置、通道 CRUD、会话状态）
- *   · /push 命令 handler 与 command/run → 会话状态折叠
+ *   · /service_push 命令 handler 与 command/run → 会话状态折叠
  *   · session/event turn/end → 真正发出 HTTP 推送（成功 + 失败路径）
  *   · 带 command/run 的会话（模拟 fork 继承）状态正确
  * 运行：node test/host-integration.mjs
@@ -41,7 +41,7 @@ const echoBase = `http://127.0.0.1:${String(echoServer.address().port)}`;
 
 /* ────────────────────────── 假 Context ────────────────────────── */
 
-const home = mkdtempSync(join(tmpdir(), 'dsh-push-notify-test-'));
+const home = mkdtempSync(join(tmpdir(), 'dsh-serverChan-test-'));
 const handlers = new Map();
 const liveSessions = new Map();
 let commandDefinition;
@@ -207,7 +207,7 @@ await (async () => {
     console.log('  ok  GET /session 默认开启（新会话默认）');
   }
 
-  /* ── /push on 命令 → 状态来自日志 ── */
+  /* ── /service_push on 命令 → 状态来自日志 ── */
   {
     session.events.push({ type: 'command/run', time: 11_000, data: { name: 'service_push', args: 'on' } });
     const result = commandDefinition.handler({ agent: { session }, rawInput: 'on' });
@@ -226,7 +226,7 @@ await (async () => {
     const record = received[received.length - 1];
     assert.ok(record.url.startsWith('/echo'));
     const payload = JSON.parse(record.body);
-    assert.equal(payload.source, 'dsh-push-notify');
+    assert.equal(payload.source, 'dsh-serverChan');
     assert.match(payload.title, /完成/u);
     assert.match(payload.text, /集成测试会话/u);
     assert.match(payload.text, /第 1 轮的最后回复/u);
@@ -237,7 +237,7 @@ await (async () => {
     console.log('  ok  turn/end → Webhook 收到真实推送 + last 记录');
   }
 
-  /* ── /push off → 不再推送 ── */
+  /* ── /service_push off → 不再推送 ── */
   {
     session.events.push({ type: 'command/run', time: 12_000, data: { name: 'service_push', args: 'off' } });
     const result = commandDefinition.handler({ agent: { session }, rawInput: 'off' });

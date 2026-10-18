@@ -237,7 +237,7 @@ await check('通用 Webhook：POST JSON 字段齐全 + 自定义 header', async 
   assert.equal(record.method, 'POST');
   assert.equal(record.headers['x-token'], 't-1');
   const payload = JSON.parse(record.body);
-  assert.equal(payload.source, 'dsh-push-notify');
+  assert.equal(payload.source, 'dsh-serverChan');
   assert.equal(payload.title, testMessage.title);
   assert.equal(payload.session.id, 'session-x');
 });

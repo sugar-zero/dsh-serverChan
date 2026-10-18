@@ -46,7 +46,7 @@ const ReactStub = {
 
 await import('../client.js');
 assert.equal(loaded.length, 1, 'client.js 应调用一次 window.__ModuleLoader__.load');
-assert.equal(loaded[0].id, 'dsh-push-notify');
+assert.equal(loaded[0].id, 'dsh-serverChan');
 assert.equal(typeof loaded[0].factory, 'function');
 
 const exportsObject = loaded[0].factory((name) => (name === 'react' ? ReactStub : {}));

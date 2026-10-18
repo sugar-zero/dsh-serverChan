@@ -1,8 +1,8 @@
 /**
- * dsh-push-notify —— Host 半
+ * dsh-serverChan —— Host 半
  * ============================================================================
  * 1) 监听 `session/event` 的 turn/end，按会话开关把「本轮完成」推送到已启用通道；
- * 2) 注册 `/push on|off|status` 命令：会话开关写进会话日志（fork 自动继承）；
+ * 2) 注册 `/service_push on|off|status` 命令：会话开关写进会话日志（fork 自动继承）；
  * 3) 暴露 /api/push-notify/* 给设置页与会话开关读写配置 / 通道 / 状态。
  *
  * 设计约束：
@@ -328,10 +328,10 @@ export function apply(ctx) {
     }
   }), 'push-notify: session/disposed 清理');
 
-  /* ── /push 命令 ───────────────────────────────────────────── */
+  /* ── /service_push 命令 ───────────────────────────────────────────── */
 
   ctx.effect(() => ctx.commands.register({
-    definitionId: 'dsh-push-notify',
+    definitionId: 'dsh-serverChan',
     name: PUSH_COMMAND_NAME,
     description: '开启/关闭当前会话「每轮任务完成后推送通知」',
     input: { hint: 'on | off | status' },
@@ -355,7 +355,7 @@ export function apply(ctx) {
         text: `本会话完成后推送：${state.enabled ? '开启' : '关闭'}${defaultText}；可用通道 ${String(enabledChannels)} 个`,
       };
     },
-  }), 'push-notify: /push 命令');
+  }), 'push-notify: /service_push 命令');
 
   /* ── HTTP 路由（设置页 + 会话开关） ────────────────────────── */
 
@@ -452,7 +452,7 @@ export function apply(ctx) {
     if (method === 'GET' && (sub === '/' || sub === '')) {
       sendJson(res, 200, {
         ok: true,
-        plugin: 'dsh-push-notify',
+        plugin: 'dsh-serverChan',
         endpoints: ['config', 'channels', 'channels/update', 'channels/delete', 'channels/test', 'session'],
       });
       return;

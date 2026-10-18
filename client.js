@@ -1,5 +1,5 @@
 /**
- * dsh-push-notify —— Web Client 半
+ * dsh-serverChan —— Web Client 半
  * ============================================================================
  * 挂两个位置：
  *   1. conversation.input.left —— composer 工具行里「权限」控件右侧的会话推送开关；
@@ -8,7 +8,7 @@
  * ============================================================================
  */
 window.__ModuleLoader__.load({
-  id: 'dsh-push-notify',
+  id: 'dsh-serverChan',
   factory(require) {
     const React = require('react');
     const h = React.createElement;
@@ -28,7 +28,7 @@ window.__ModuleLoader__.load({
       'section.channels': '推送通道',
       'section.recent': '最近推送',
       'row.defaultEnabled': '新会话默认开启推送',
-      'row.defaultEnabledNote': '没写过 /push 的新会话按这个默认值；已有会话可在对话里单独开关。',
+      'row.defaultEnabledNote': '没写过 /service_push 的新会话按这个默认值；已有会话可在对话里单独开关。',
       'row.notifyCompleted': '每轮正常完成时推送',
       'row.notifyFailure': '出错 / 中止时也推送',
       'row.notifySubagents': '子代理 / 团队会话也推送',
@@ -74,7 +74,7 @@ window.__ModuleLoader__.load({
       'chip.titleOff': '完成后推送：关（点击开启）',
       'chip.titleNoChannel': '已完成开启，但还没有启用通道；请到「设置 → 消息推送」添加',
       'chip.failed': '切换失败',
-      'chip.noCommand': 'Host 没有提供 /push 命令',
+      'chip.noCommand': 'Host 没有提供 /service_push 命令',
       'chip.notReady': '当前会话还没准备好，稍后再试',
       'common.on': '开',
       'common.off': '关',
@@ -89,7 +89,7 @@ window.__ModuleLoader__.load({
       'section.channels': 'Channels',
       'section.recent': 'Recent pushes',
       'row.defaultEnabled': 'New sessions push by default',
-      'row.defaultEnabledNote': 'Applies to new sessions without an explicit /push; existing sessions have their own toggle.',
+      'row.defaultEnabledNote': 'Applies to new sessions without an explicit /service_push; existing sessions have their own toggle.',
       'row.notifyCompleted': 'Push on completed turns',
       'row.notifyFailure': 'Push on errors / aborts too',
       'row.notifySubagents': 'Include subagent / team sessions',
@@ -135,7 +135,7 @@ window.__ModuleLoader__.load({
       'chip.titleOff': 'Push after each turn: off (click to turn on)',
       'chip.titleNoChannel': 'Turned on, but no channel is enabled yet — add one in Settings → Push',
       'chip.failed': 'Toggle failed',
-      'chip.noCommand': 'The host does not provide the /push command',
+      'chip.noCommand': 'The host does not provide the /service_push command',
       'chip.notReady': 'This session is not ready yet, try again shortly',
       'common.on': 'On',
       'common.off': 'Off',
@@ -682,7 +682,7 @@ window.__ModuleLoader__.load({
       inject: ['slots', 'locale', 'sessions'],
       apply(ctx) {
         const style = document.createElement('style');
-        style.setAttribute('data-plugin-css', 'dsh-push-notify');
+        style.setAttribute('data-plugin-css', 'dsh-serverChan');
         style.textContent = CSS;
         document.head.appendChild(style);
         ctx.effect(() => () => style.remove(), 'push-notify: 样式');
