@@ -1,0 +1,8 @@
+# dsh-push-notify —— Host 插件挂载声明
+# 安装后 profile 的 dsh.profile.bundles 里出现 dsh-push-notify 即生效：
+#   · Host 半（index.js）：监听会话 turn/end、注册 /push 命令、提供 /api/push-notify 路由；
+#   · Web 半（client.js）：对话工具行「权限旁」的会话开关 + 设置页「消息推送」。
+- insert:
+    - id: push-notify
+      name: dsh-push-notify
+      config: {}

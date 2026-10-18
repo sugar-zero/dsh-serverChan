@@ -1,0 +1,55 @@
+{
+  "name": "dsh-push-notify",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "DSH 消息推送：每轮任务完成后推送到 Server酱/飞书/企业微信/钉钉/Telegram/Bark/自定义 Webhook；对话内按会话开关，设置页管理通道与新会话默认。",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "notification",
+    "push",
+    "serverchan",
+    "feishu",
+    "wecom",
+    "dingtalk"
+  ],
+  "license": "MIT",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "lib",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "test"
+  ],
+  "engines": {
+    "node": ">=22",
+    "dsh": ">=0.2.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  }
+}

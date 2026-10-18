@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Push Notifications",
+    "description": "Push each completed turn to ServerChan, Feishu, WeCom, DingTalk, Telegram, Bark, or a custom webhook — with a per-session toggle in the composer and channel management in Settings."
+  }
+}

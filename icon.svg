@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Push notifications">
+  <defs>
+    <linearGradient id="pnBell" x1="12" y1="10" x2="52" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5aa9ff"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="#0f172a"/>
+  <path d="M32 12c-7.2 0-13 5.8-13 13v8.4l-4.2 6.4c-1.1 1.7.1 4 2.1 4h30.2c2 0 3.2-2.3 2.1-4L45 33.4V25c0-7.2-5.8-13-13-13Z" fill="url(#pnBell)"/>
+  <path d="M26 47.5c.6 3.2 3 5.5 6 5.5s5.4-2.3 6-5.5H26Z" fill="#93c5fd"/>
+  <circle cx="45.5" cy="17.5" r="6.5" fill="#22c55e" stroke="#0f172a" stroke-width="2.5"/>
+</svg>

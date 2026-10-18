@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "消息推送",
+    "description": "每轮任务完成后推送到 Server酱、飞书、企业微信、钉钉、Telegram、Bark 或自定义 Webhook；对话内按会话开关，支持新会话默认与通道管理。"
+  }
+}
