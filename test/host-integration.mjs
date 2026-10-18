@@ -191,9 +191,11 @@ await (async () => {
     const response = await callRoute('POST', '/api/push-notify/config', {
       defaultEnabled: true,
       notifySubagents: true,
+      excerptMode: 'channel',
       excerptChars: 100,
     });
     assert.equal(response.body.config.defaultEnabled, true);
+    assert.equal(response.body.config.excerptMode, 'channel');
     console.log('  ok  POST /config 修改默认');
   }
 

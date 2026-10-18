@@ -38,7 +38,11 @@ window.__ModuleLoader__.load({
       'row.cooldown': '同会话冷却（秒）',
       'row.cooldownNote': '同一会话两次推送的最小间隔；0 = 不限制。',
       'row.includeExcerpt': '正文包含最后回复摘要',
-      'row.excerptChars': '摘要字数上限',
+      'row.excerptMode': '摘要长度',
+      'row.excerptModeNote': '「通道上限」= 不自行截断，由每个通道按自己的能力截；「自定义」= 按下面的字数额。',
+      'mode.custom': '自定义',
+      'mode.channel': '通道上限',
+      'row.excerptChars': '自定义字数上限',
       'row.excerptCharsNote': '0 = 不附带摘要（等同上面的开关关闭）',
       'btn.save': '保存',
       'btn.test': '测试',
@@ -100,7 +104,11 @@ window.__ModuleLoader__.load({
       'row.cooldown': 'Per-session cooldown (s)',
       'row.cooldownNote': 'Minimum gap between pushes for one session; 0 = no limit.',
       'row.includeExcerpt': 'Include last reply excerpt',
-      'row.excerptChars': 'Excerpt length limit',
+      'row.excerptMode': 'Excerpt length',
+      'row.excerptModeNote': '"Channel limit" lets each channel truncate to its own capacity; "Custom" uses the character count below.',
+      'mode.custom': 'Custom',
+      'mode.channel': 'Channel limit',
+      'row.excerptChars': 'Custom character limit',
       'row.excerptCharsNote': '0 = no excerpt (same as turning the switch above off)',
       'btn.save': 'Save',
       'btn.test': 'Test',
@@ -582,14 +590,24 @@ window.__ModuleLoader__.load({
           h(NumberField, { value: config.cooldownSeconds, min: 0, max: 3600, disabled, onCommit: (value) => applyPatch({ cooldownSeconds: value }) })),
         h(Row, { label: t('row.includeExcerpt') },
           h(Toggle, { checked: config.includeExcerpt, onChange: (value) => applyPatch({ includeExcerpt: value }), label: t('row.includeExcerpt') })),
-        h(Row, { label: t('row.excerptChars'), note: t('row.excerptCharsNote') },
-          h(NumberField, {
-            value: config.excerptChars,
-            min: 0,
-            max: 4000,
-            disabled: disabled || !config.includeExcerpt,
-            onCommit: (value) => applyPatch({ excerptChars: value }),
-          })));
+        h(Row, { label: t('row.excerptMode'), note: t('row.excerptModeNote') },
+          h('select', {
+            'data-pn-select': '',
+            value: config.excerptMode,
+            disabled: !config.includeExcerpt,
+            'aria-label': t('row.excerptMode'),
+            onChange: (event) => applyPatch({ excerptMode: event.target.value }),
+          }, h('option', { value: 'custom' }, t('mode.custom')), h('option', { value: 'channel' }, t('mode.channel')))),
+        config.excerptMode === 'custom'
+          ? h(Row, { label: t('row.excerptChars'), note: t('row.excerptCharsNote') },
+            h(NumberField, {
+              value: config.excerptChars,
+              min: 0,
+              max: 4000,
+              disabled: disabled || !config.includeExcerpt,
+              onCommit: (value) => applyPatch({ excerptChars: value }),
+            }))
+          : null);
 
       const channelCards = view.channels.map((channel) => {
         const targetEntries = Object.entries(channel.fields ?? {});

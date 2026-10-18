@@ -56,6 +56,7 @@ const DEFAULT_CONFIG = {
   minTurnSeconds: 0,
   cooldownSeconds: 0,
   includeExcerpt: true,
+  excerptMode: 'custom',
   excerptChars: 600,
   channels: [],
 };
@@ -68,6 +69,7 @@ const SETTING_KEYS = [
   'minTurnSeconds',
   'cooldownSeconds',
   'includeExcerpt',
+  'excerptMode',
   'excerptChars',
 ];
 
@@ -140,6 +142,7 @@ function normalizeConfig(raw) {
     minTurnSeconds: clampInt(source.minTurnSeconds, 0, 600, 0),
     cooldownSeconds: clampInt(source.cooldownSeconds, 0, 3600, 0),
     includeExcerpt: source.includeExcerpt !== false,
+    excerptMode: source.excerptMode === 'channel' ? 'channel' : 'custom',
     excerptChars: clampInt(source.excerptChars, 0, 4000, 600),
     channels: normalizeChannels(source.channels),
   };
@@ -371,6 +374,7 @@ export function apply(ctx) {
         minTurnSeconds: config.minTurnSeconds,
         cooldownSeconds: config.cooldownSeconds,
         includeExcerpt: config.includeExcerpt,
+        excerptMode: config.excerptMode,
         excerptChars: config.excerptChars,
       },
       channelTypes: CHANNEL_TYPES.map((descriptor) => ({

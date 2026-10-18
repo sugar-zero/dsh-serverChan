@@ -146,6 +146,17 @@ await check('摘要字数填 0 时不附带摘要（不留孤立的省略号）'
   assert.doesNotMatch(message.text, /这是最后回复/u);
   assert.equal(message.meta.session.status, 'completed');
 });
+await check('摘要模式「自定义」按字数截，「通道上限」不截（交给适配器）', () => {
+  const long = '长'.repeat(200);
+  const context = { firstUserText: 'hi', replyText: long, turnStartedAt: undefined, finishedAt: undefined };
+  const base = { session: fakeSession('s1', []), context, status: statusOf({ kind: 'completed' }) };
+  const custom = buildPushMessage({ ...base, config: { includeExcerpt: true, excerptMode: 'custom', excerptChars: 10 } });
+  assert.match(custom.markdown, /…/u);
+  assert.ok(!custom.markdown.includes(long));
+  const channel = buildPushMessage({ ...base, config: { includeExcerpt: true, excerptMode: 'channel', excerptChars: 10 } });
+  assert.ok(channel.markdown.includes(long));
+  assert.doesNotMatch(channel.markdown, /…/u);
+});
 await check('formatDuration 覆盖秒 / 分 / 小时', () => {
   assert.equal(formatDuration(200), '不到 1 秒');
   assert.equal(formatDuration(8300), '8 秒');
