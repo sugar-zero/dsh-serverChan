@@ -24,6 +24,7 @@ dsh plugin add /path/to/dsh-serverChan --profile desktop
 1. 打开 **设置 → 消息推送**，点「添加通道」，填好并「测试」。
 2. 需要哪一轮推哪一轮：在对话输入框工具行点「推送」开关（或输入 `/service_push on`）。
 3. 新会话默认是否开启，在设置页第一项；默认**关**。
+4. 推送正文：状态 + 会话标题 + 用时 + 工作区 + 模型 + 最后回复摘要。摘要可在设置页关掉，或把「摘要字数上限」填 **0**（= 不附带摘要，不会只留一个省略号）。
 
 ## 存储
 
@@ -43,5 +44,7 @@ dsh plugin add /path/to/dsh-serverChan --profile desktop
 ## 开发
 
 ```bash
-node test/smoke.mjs   # 本地冒烟测试（通道 payload、状态折叠、消息拼装）
+node test/smoke.mjs            # 通道 payload / 消息拼装 / 状态折叠 / 摘要截断
+node test/host-integration.mjs # 用假 ctx 跑完整 Host：路由、/service_push、turn/end → 真实 HTTP 推送
+node test/client-load.mjs      # 客户端模块格式与两个 slot 注册
 ```
