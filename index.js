@@ -36,6 +36,7 @@ import {
 import { buildPushMessage, collectTurnContext, statusOf } from './lib/message.mjs';
 import {
   PUSH_COMMAND_NAME,
+  commandStateFromEvents,
   parsePushArg,
   resolvePushState,
   shouldNotify,
@@ -73,7 +74,7 @@ const SETTING_KEYS = [
   'excerptChars',
 ];
 
-export const inject = ['webServer', 'commands', 'sessions'];
+export const inject = ['webServer', 'commands', 'sessions', 'sessionController'];
 
 function clampInt(value, min, max, fallback) {
   const number = Number(value);
@@ -434,6 +435,23 @@ export function apply(ctx) {
     });
   }
 
+  /**
+   * 会话不在内存里（重启后还没被恢复/打开）时，从持久化日志折叠 /service_push 状态。
+   * 用 sessionController.inspect：文档保证「不激活 Agent、只读持久化事件」，
+   * 所以不会因为打开设置页/看 chip 就把冷会话拉起来。
+   */
+  async function readPersistedExplicitState(sessionId) {
+    try {
+      const controller = typeof ctx.get === 'function' ? ctx.get('sessionController') : undefined;
+      if (!controller || typeof controller.inspect !== 'function') return undefined;
+      const inspection = await controller.inspect(sessionId, AbortSignal.timeout(8000));
+      return commandStateFromEvents(inspection?.events ?? []);
+    } catch (error) {
+      logLine('warn', `读取冷会话状态失败（${String(sessionId).slice(-8)}）：${errorText(error)}`);
+      return undefined;
+    }
+  }
+
   function testMessage() {
     const now = new Date();
     return {
@@ -583,9 +601,21 @@ export function apply(ctx) {
       } catch {
         session = undefined;
       }
-      const state = session !== undefined
-        ? stateFor(session)
-        : { enabled: config.defaultEnabled, source: 'default', overridden: false };
+      let state;
+      if (session !== undefined) {
+        state = stateFor(session);
+      } else if (explicitStates.has(String(sessionId))) {
+        state = { enabled: explicitStates.get(String(sessionId)), source: 'command', overridden: true };
+      } else {
+        // 冷会话（重启后还没打开）：从持久化日志里读，别退回「默认关」把 UI 显示成灰色。
+        const explicit = await readPersistedExplicitState(sessionId);
+        if (explicit !== undefined) {
+          explicitStates.set(String(sessionId), explicit);
+          state = { enabled: explicit, source: 'command', overridden: true };
+        } else {
+          state = { enabled: config.defaultEnabled, source: 'default', overridden: false };
+        }
+      }
       sendJson(res, 200, {
         ok: true,
         sessionId,

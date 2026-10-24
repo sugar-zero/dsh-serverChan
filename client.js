@@ -363,6 +363,7 @@ window.__ModuleLoader__.load({
       const [busy, setBusy] = useState(false);
       const [failure, setFailure] = useState('');
       const aliveRef = useRef(true);
+      const retryRef = useRef(0);
 
       useEffect(() => {
         aliveRef.current = true;
@@ -376,6 +377,7 @@ window.__ModuleLoader__.load({
           if (aliveRef.current) {
             setState(data);
             setFailure('');
+            retryRef.current = 0;
           }
         } catch (error) {
           if (aliveRef.current) setFailure(messageText(error));
@@ -384,6 +386,15 @@ window.__ModuleLoader__.load({
       }, [sessionId]);
 
       useEffect(() => { void load(); }, [load]);
+
+      // Host 刚启动、路由还没挂上时首次 GET 会失败：短重试几次，别让 chip 一直空/灰。
+      useEffect(() => {
+        if (state !== null || failure === '') return;
+        if (retryRef.current >= 5) return;
+        retryRef.current += 1;
+        const timer = globalThis.setTimeout(() => { void load(); }, 1500);
+        return () => globalThis.clearTimeout(timer);
+      }, [state, failure, load]);
 
       const toggle = async () => {
         if (busy || state === null) return;

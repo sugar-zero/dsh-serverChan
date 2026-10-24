@@ -53,6 +53,22 @@ const fakeCtx = {
     if (name === 'sessionTitle') {
       return { get: (session) => (session.title ? { title: session.title } : undefined) };
     }
+    if (name === 'sessionController') {
+      return {
+        async inspect(sessionId) {
+          if (sessionId === 'session-cold-on') {
+            return { events: [{ type: 'command/run', seq: 10, data: { name: 'service_push', args: ' on' } }] };
+          }
+          if (sessionId === 'session-cold-off') {
+            return { events: [{ type: 'command/run', seq: 11, data: { name: 'service_push', args: ' off' } }] };
+          }
+          if (sessionId === 'session-cold-none') {
+            return { events: [{ type: 'turn/start', seq: 1, data: { turn: 1 } }] };
+          }
+          throw new Error('inspect failed');
+        },
+      };
+    }
     return undefined;
   },
   effect(callback) {
@@ -163,6 +179,33 @@ await (async () => {
     assert.equal(response.body.channels.length, 0);
     assert.ok(response.body.channelTypes.length >= 7);
     console.log('  ok  GET /config 默认值');
+  }
+
+  /* ── 冷会话（重启后还没打开）：从持久化日志读状态，不能退回「默认灰」 ── */
+  {
+    const on = await callRoute('GET', '/api/push-notify/session?sessionId=session-cold-on');
+    assert.equal(on.statusCode, 200);
+    assert.equal(on.body.ok, true);
+    assert.equal(on.body.live, false);
+    assert.equal(on.body.enabled, true);
+    assert.equal(on.body.source, 'command');
+    assert.equal(on.body.overridden, true);
+
+    const off = await callRoute('GET', '/api/push-notify/session?sessionId=session-cold-off');
+    assert.equal(off.body.live, false);
+    assert.equal(off.body.enabled, false);
+    assert.equal(off.body.source, 'command');
+
+    const none = await callRoute('GET', '/api/push-notify/session?sessionId=session-cold-none');
+    assert.equal(none.body.live, false);
+    assert.equal(none.body.enabled, false);
+    assert.equal(none.body.source, 'default');
+
+    const broken = await callRoute('GET', '/api/push-notify/session?sessionId=session-cold-broken');
+    assert.equal(broken.statusCode, 200);
+    assert.equal(broken.body.enabled, false);
+    assert.equal(broken.body.source, 'default');
+    console.log('  ok  冷会话从持久化日志读状态（on/off/default/读取失败）');
   }
 
   /* ── 通道 CRUD ── */
