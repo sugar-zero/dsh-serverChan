@@ -396,6 +396,48 @@ window.__ModuleLoader__.load({
         return () => globalThis.clearTimeout(timer);
       }, [state, failure, load]);
 
+      // 跨客户端同步：远程访问/另一个窗口执行 /service_push 之后，本地 chip 实时更新（SSE）。
+      useEffect(() => {
+        if (!sessionId || typeof globalThis.EventSource !== 'function') return undefined;
+        let source;
+        try {
+          source = new globalThis.EventSource(`${API}/events?sessionId=${encodeURIComponent(sessionId)}`);
+        } catch {
+          return undefined;
+        }
+        const onState = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (!payload || payload.sessionId !== sessionId) return;
+            retryRef.current = 0;
+            setFailure('');
+            setState((current) => ({
+              ...(current || { ok: true, sessionId, live: true, defaultEnabled: false, channels: 0 }),
+              ok: true,
+              sessionId,
+              enabled: payload.enabled === true,
+              source: payload.source || 'command',
+              overridden: payload.overridden === true,
+              live: typeof payload.live === 'boolean' ? payload.live : true,
+            }));
+          } catch {
+            // 忽略坏帧
+          }
+        };
+        let opened = false;
+        const onOpen = () => {
+          if (opened) void load(); // 断线重连后兜底对一次全量状态
+          opened = true;
+        };
+        source.addEventListener('state', onState);
+        source.addEventListener('open', onOpen);
+        return () => {
+          source.removeEventListener('state', onState);
+          source.removeEventListener('open', onOpen);
+          source.close();
+        };
+      }, [sessionId, load]);
+
       const toggle = async () => {
         if (busy || state === null) return;
         setBusy(true);

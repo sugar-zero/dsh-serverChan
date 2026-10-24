@@ -232,6 +232,22 @@ export function apply(ctx) {
   const explicitStates = new Map();
   const lastPushAt = new Map();
 
+  /* ── 会话状态变更广播（SSE）：任何客户端（含远程访问）敲 /service_push 后，
+        本地已打开的页面不用轮询也能同步 chip 状态 ── */
+  const streamClients = new Set();
+
+  function broadcastPushState(payload) {
+    const frame = `event: state\ndata: ${JSON.stringify(payload)}\n\n`;
+    for (const client of streamClients) {
+      if (client.sessionId !== '' && client.sessionId !== payload.sessionId) continue;
+      try {
+        client.res.write(frame);
+      } catch {
+        // 连接已断开：close 事件会清理
+      }
+    }
+  }
+
   function sessionTitleOf(session) {
     try {
       const service = typeof ctx.get === 'function' ? ctx.get('sessionTitle') : undefined;
@@ -316,8 +332,19 @@ export function apply(ctx) {
       const data = event.data ?? {};
       if (data.name === PUSH_COMMAND_NAME) {
         const arg = parsePushArg(data.args);
-        if (arg === 'on') explicitStates.set(String(session.id), true);
-        else if (arg === 'off') explicitStates.set(String(session.id), false);
+        if (arg === 'on' || arg === 'off') {
+          const enabled = arg === 'on';
+          explicitStates.set(String(session.id), enabled);
+          broadcastPushState({
+            sessionId: String(session.id),
+            enabled,
+            source: 'command',
+            overridden: true,
+            live: true,
+            seq: typeof event.seq === 'number' ? event.seq : undefined,
+            time: Date.now(),
+          });
+        }
       }
       return;
     }
@@ -462,6 +489,43 @@ export function apply(ctx) {
     };
   }
 
+  function openStateStream(req, res, sessionId) {
+    if (streamClients.size >= 32) {
+      sendJson(res, 429, { ok: false, error: 'too many push state streams' });
+      return;
+    }
+    res.writeHead(200, {
+      'content-type': 'text/event-stream; charset=utf-8',
+      'cache-control': 'no-cache, no-transform',
+      connection: 'keep-alive',
+      'x-accel-buffering': 'no',
+    });
+    res.write(': connected\n\n');
+    const client = { sessionId, res, timer: undefined };
+    client.timer = setInterval(() => {
+      try {
+        res.write(': ping\n\n');
+      } catch {
+        // close 事件清理
+      }
+    }, 20_000);
+    if (typeof client.timer?.unref === 'function') client.timer.unref();
+    streamClients.add(client);
+    const cleanup = () => {
+      if (client.timer !== undefined) clearInterval(client.timer);
+      client.timer = undefined;
+      streamClients.delete(client);
+      try {
+        res.end();
+      } catch {
+        // 已结束
+      }
+    };
+    req.on('close', cleanup);
+    req.on('error', cleanup);
+    res.on?.('close', cleanup);
+  }
+
   async function handleHttp(req, res, url) {
     const pathname = url.pathname;
     if (!pathname.startsWith(API_PREFIX)) {
@@ -475,8 +539,13 @@ export function apply(ctx) {
       sendJson(res, 200, {
         ok: true,
         plugin: 'dsh-serverChan',
-        endpoints: ['config', 'channels', 'channels/update', 'channels/delete', 'channels/test', 'session'],
+        endpoints: ['config', 'channels', 'channels/update', 'channels/delete', 'channels/test', 'session', 'events'],
       });
+      return;
+    }
+
+    if (method === 'GET' && sub === '/events') {
+      openStateStream(req, res, url.searchParams.get('sessionId') ?? '');
       return;
     }
 
@@ -651,6 +720,18 @@ export function apply(ctx) {
   } catch (error) {
     logLine('error', `HTTP 路由没挂上：${errorText(error)}`);
   }
+
+  ctx.effect(() => () => {
+    for (const client of [...streamClients]) {
+      if (client.timer !== undefined) clearInterval(client.timer);
+      try {
+        client.res.end();
+      } catch {
+        // 已结束
+      }
+    }
+    streamClients.clear();
+  }, 'push-notify: 收掉 SSE 连接');
 
   logLine('info', `已挂载（命令 /${PUSH_COMMAND_NAME}，家目录 ${stateDir}，通道 ${String(getConfig().channels.length)} 个，新会话默认${getConfig().defaultEnabled ? '开' : '关'}）`);
 }

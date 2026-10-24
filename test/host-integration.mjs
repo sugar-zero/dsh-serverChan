@@ -129,6 +129,31 @@ function callRoute(method, path, body) {
   });
 }
 
+function openSse(path) {
+  const request = new EventEmitter();
+  request.method = 'GET';
+  request.url = path;
+  request.destroy = () => {};
+  const chunks = [];
+  let finish;
+  const done = new Promise((resolve) => { finish = resolve; });
+  const response = {
+    statusCode: 0,
+    headers: null,
+    ended: false,
+    writeHead(code, headers) { this.statusCode = code; this.headers = headers; },
+    write(chunk) { chunks.push(String(chunk)); return true; },
+    on() {},
+    end() {
+      if (this.ended) return;
+      this.ended = true;
+      finish({ status: this.statusCode, headers: this.headers, text: chunks.join('') });
+    },
+  };
+  routeRegistration.handler(request, response);
+  return { request, response, done };
+}
+
 async function waitFor(predicate, label, timeoutMs = 3000) {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
@@ -206,6 +231,34 @@ await (async () => {
     assert.equal(broken.body.enabled, false);
     assert.equal(broken.body.source, 'default');
     console.log('  ok  冷会话从持久化日志读状态（on/off/default/读取失败）');
+  }
+
+  /* ── SSE：任意客户端执行 /service_push 后，其他已打开页面能收到状态变化 ── */
+  {
+    const mine = openSse('/api/push-notify/events?sessionId=session-sse');
+    const other = openSse('/api/push-notify/events?sessionId=session-other');
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    assert.equal(mine.response.statusCode, 200);
+    assert.match(mine.response.headers['content-type'], /text\/event-stream/u);
+    assert.match(mine.response.headers.connection, /keep-alive/u);
+
+    // 模拟“远程访问那边”执行 /service_push off：Host 收到 command/run 并广播
+    handlers.get('session/event')(
+      { id: 'session-sse' },
+      { type: 'command/run', seq: 900, time: Date.now(), data: { name: 'service_push', args: ' off' } },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    mine.request.emit('close');
+    other.request.emit('close');
+    const mineResult = await mine.done;
+    const otherResult = await other.done;
+
+    assert.match(mineResult.text, /: connected/u);
+    assert.match(mineResult.text, /event: state/u);
+    assert.match(mineResult.text, /"sessionId":"session-sse"/u);
+    assert.match(mineResult.text, /"enabled":false/u);
+    assert.doesNotMatch(otherResult.text, /event: state/u);
+    console.log('  ok  SSE 状态广播（按 sessionId 过滤，关闭后清理）');
   }
 
   /* ── 通道 CRUD ── */
